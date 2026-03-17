@@ -21,6 +21,7 @@
 <button onclick="bacaSemua()">🔍 Semua Data Raw</button>
 
 <h3>🗑 Hapus Data</h3>
+<button class="orange" onclick="migrasiFormat()">🔄 Migrasi Format Data</button>
 <button class="red" onclick="hapusDokumen()">Hapus docPKS & docNota di Firebase</button>
 <button class="red" onclick="hapusSemua()">Hapus SEMUA data Firebase</button>
 
@@ -95,6 +96,30 @@ async function hapusSemua() {
   clr();
   const ok = await del('');
   log(ok ? "✅ Semua data dihapus" : "❌ Gagal");
+}
+
+async function migrasiFormat() {
+  clr(); log("--- MIGRASI FORMAT DATA ---");
+  const pks  = await get('docPKS');
+  const nota = await get('docNota');
+  
+  // Konversi ke format { data: [...], ts: ... }
+  const toNew = v => {
+    if (!v) return { data: [], ts: Date.now() };
+    if (Array.isArray(v)) return { data: v, ts: Date.now() };
+    if (v.data) return { data: v.data, ts: Date.now() };
+    return { data: [], ts: Date.now() };
+  };
+  
+  const newPKS  = toNew(pks);
+  const newNota = toNew(nota);
+  
+  const ok1 = await put('docPKS',  newPKS);
+  const ok2 = await put('docNota', newNota);
+  
+  log("docPKS  migrasi: " + ok1 + " → " + newPKS.data.length + " dokumen");
+  log("docNota migrasi: " + ok2 + " → " + newNota.data.length + " dokumen");
+  log("✅ Migrasi selesai! Refresh aplikasi untuk melihat hasilnya.");
 }
 
 async function buatAdmin() {

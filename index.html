@@ -2435,29 +2435,43 @@ function savePersistentData() {
   // Simpan ke localStorage dulu (langsung)
   localStorage.setItem('bpsdm_docPKS',  JSON.stringify(dataPKS));
   localStorage.setItem('bpsdm_docNota', JSON.stringify(dataNota));
-  // Wrap dalam objek agar array kosong tidak jadi null di Firebase
+  // Simpan ke Firebase — pakai { data: [...] } agar array kosong tidak jadi null
   if (firebaseReady) {
-    fbSet('docPKS',  { data: dataPKS });
-    fbSet('docNota', { data: dataNota });
+    fbSet('docPKS',  { data: dataPKS,  ts: Date.now() });
+    fbSet('docNota', { data: dataNota, ts: Date.now() });
   }
 }
 
 async function loadPersistentData() {
-  // Coba ambil dari Firebase (sumber kebenaran utama)
-  if (firebaseReady) {
-    try {
-      const [fbPKS, fbNota, fbLinks] = await Promise.all([
-        fbGet('docPKS'),
-        fbGet('docNota'),
-        fbGet('doclinks'),
-      ]);
-      // Unwrap dari objek { data: [...] } — array kosong pun valid
-      if (fbPKS  && Array.isArray(fbPKS.data))  { dataPKS  = fbPKS.data;  localStorage.setItem('bpsdm_docPKS',  JSON.stringify(dataPKS)); }
-      if (fbNota && Array.isArray(fbNota.data)) { dataNota = fbNota.data; localStorage.setItem('bpsdm_docNota', JSON.stringify(dataNota)); }
-      if (fbLinks && typeof fbLinks === 'object' && !fbLinks.data) { docLinks = fbLinks; localStorage.setItem('bpsdm_doclinks', JSON.stringify(docLinks)); }
-      return; // sukses dari Firebase, selesai
-    } catch(e) { /* gagal, fallback localStorage */ }
-  }
+  // Selalu coba Firebase dulu (tidak perlu cek firebaseReady — kalau gagal fallback)
+  try {
+    const [fbPKS, fbNota, fbLinks] = await Promise.all([
+      fbGet('docPKS'),
+      fbGet('docNota'),
+      fbGet('doclinks'),
+    ]);
+
+    // Handle 2 format: { data: [...] } (format baru) atau [...] (format lama)
+    const parseDocs = v => {
+      if (!v) return null;                          // null = tidak ada data
+      if (Array.isArray(v)) return v;               // format lama: array langsung
+      if (v.data && Array.isArray(v.data)) return v.data; // format baru: { data: [] }
+      return null;
+    };
+
+    const pksData  = parseDocs(fbPKS);
+    const notaData = parseDocs(fbNota);
+
+    if (pksData  !== null) { dataPKS  = pksData;  localStorage.setItem('bpsdm_docPKS',  JSON.stringify(dataPKS)); }
+    if (notaData !== null) { dataNota = notaData; localStorage.setItem('bpsdm_docNota', JSON.stringify(dataNota)); }
+    if (fbLinks && typeof fbLinks === 'object') {
+      // Handle docLinks: bisa object biasa atau { data: {...} }
+      docLinks = fbLinks.data ? fbLinks.data : fbLinks;
+      localStorage.setItem('bpsdm_doclinks', JSON.stringify(docLinks));
+    }
+    return; // selesai dari Firebase
+  } catch(e) { /* jaringan error, fallback ke localStorage */ }
+
   // Fallback: baca dari localStorage
   const savedPKS  = localStorage.getItem('bpsdm_docPKS');
   const savedNota = localStorage.getItem('bpsdm_docNota');
