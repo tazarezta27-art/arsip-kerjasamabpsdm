@@ -1535,55 +1535,54 @@ const FB_DB_URL = "https://arsip-bpsdm-default-rtdb.asia-southeast1.firebasedata
 let firebaseReady = false;
 let syncStatus    = 'offline';
 
-async function initFirebase() {
-  try {
-    // Cek koneksi dengan PUT ke node /ping
-    const res = await fetch(`${FB_DB_URL}/ping.json`, {
-      method: 'PUT',
-      body: JSON.stringify(Date.now())
-    });
-    if (res.ok) {
-      firebaseReady = true;
-      syncStatus    = 'online';
-      await syncAccountsFromFirebase();
-    }
-  } catch(e) {
-    syncStatus = 'offline';
-  }
-}
-
+// Baca dari Firebase
 async function fbGet(path) {
   try {
     const res = await fetch(`${FB_DB_URL}/${path}.json`);
     if (!res.ok) return null;
-    const val = await res.json();
-    return val;
+    return await res.json();
   } catch(e) { return null; }
 }
 
+// Tulis ke Firebase
 async function fbSet(path, value) {
   try {
-    await fetch(`${FB_DB_URL}/${path}.json`, {
+    const res = await fetch(`${FB_DB_URL}/${path}.json`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(value)
     });
-    firebaseReady = true;
-    syncStatus    = 'online';
-  } catch(e) {
-    firebaseReady = false;
-    syncStatus    = 'offline';
-  }
+    return res.ok;
+  } catch(e) { return false; }
 }
 
-async function syncAccountsFromFirebase() {
-  const data = await fbGet('accounts');
-  if (Array.isArray(data) && data.length) {
-    localStorage.setItem('bpsdm_accounts', JSON.stringify(data));
-  } else {
-    // Firebase kosong atau baru — push akun lokal
-    const local = getAccounts();
-    if (local.length) await fbSet('accounts', local);
+// Init: cek koneksi, sync akun
+async function initFirebase() {
+  // Hanya jalan jika dibuka via https:// (bukan file://)
+  if (location.protocol !== 'https:') {
+    updateSyncBadge('offline');
+    return;
+  }
+  try {
+    const ok = await fbSet('ping', Date.now());
+    if (ok) {
+      firebaseReady = true;
+      syncStatus    = 'online';
+      updateSyncBadge('online');
+      // Sync akun dari Firebase ke localStorage
+      const data = await fbGet('accounts');
+      if (Array.isArray(data) && data.length) {
+        localStorage.setItem('bpsdm_accounts', JSON.stringify(data));
+      } else {
+        // Firebase kosong — push akun lokal ke Firebase
+        const local = getAccounts();
+        if (local.length) fbSet('accounts', local);
+      }
+    } else {
+      updateSyncBadge('offline');
+    }
+  } catch(e) {
+    updateSyncBadge('offline');
   }
 }
 
@@ -1610,7 +1609,7 @@ function getAccounts() {
 function saveAccounts(arr) {
   localStorage.setItem('bpsdm_accounts', JSON.stringify(arr));
   // Sync ke Firebase di background (fire-and-forget, tidak perlu await)
-  if (firebaseReady && db) {
+  if (firebaseReady) {
     fbSet('accounts', arr); // fire-and-forget
   }
 }
@@ -1924,15 +1923,14 @@ async function doLogin() {
   const email = document.getElementById('login-email').value.trim().toLowerCase();
   const pass  = document.getElementById('login-pass').value;
 
-  // Saat login, selalu coba ambil akun dari Firebase dulu
-  // agar device baru langsung punya data akun terbaru
-  if (firebaseReady && db) {
-    try {
-      const data = await fbGet('accounts');
-      if (Array.isArray(data) && data.length) {
-        localStorage.setItem('bpsdm_accounts', JSON.stringify(data));
-      }
-    } catch(e) { /* fallback ke localStorage */ }
+  // Saat login: tarik akun terbaru dari Firebase (hanya kalau https)
+  if (location.protocol === 'https:') {
+    const data = await fbGet('accounts');
+    if (Array.isArray(data) && data.length) {
+      localStorage.setItem('bpsdm_accounts', JSON.stringify(data));
+      firebaseReady = true;
+      syncStatus    = 'online';
+    }
   }
 
   const accts = getAccounts();
@@ -2438,7 +2436,7 @@ function savePersistentData() {
   localStorage.setItem('bpsdm_docPKS',  JSON.stringify(dataPKS));
   localStorage.setItem('bpsdm_docNota', JSON.stringify(dataNota));
   // Sync ke Firebase di background
-  if (firebaseReady && db) {
+  if (firebaseReady) {
     fbSet('docPKS', dataPKS);
     fbSet('docNota', dataNota); // fire-and-forget
   }
@@ -2446,7 +2444,7 @@ function savePersistentData() {
 
 async function loadPersistentData() {
   // Coba ambil dari Firebase (sumber kebenaran utama)
-  if (firebaseReady && db) {
+  if (firebaseReady) {
     try {
       const [fbPKS, fbNota, fbLinks] = await Promise.all([
         fbGet('docPKS'),
@@ -2469,7 +2467,7 @@ async function loadPersistentData() {
 
 function saveDocLinks() {
   localStorage.setItem('bpsdm_doclinks', JSON.stringify(docLinks));
-  if (firebaseReady && db) {
+  if (firebaseReady) {
     fbSet('doclinks', docLinks); // fire-and-forget
   }
 }
