@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Debug Firebase</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; max-width: 700px; }
+  pre  { background: #f3f4f6; padding: 14px; border-radius: 8px; font-size: 12px; white-space: pre-wrap; word-break: break-all; max-height: 400px; overflow-y: auto; }
+  button { padding: 9px 16px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; margin: 4px; }
+  button.red { background: #ef4444; }
+  button.green { background: #10b981; }
+  button.orange { background: #f59e0b; }
+  h3 { margin: 16px 0 8px; }
+</style>
+</head>
+<body>
+<h2>🔥 Debug Firebase BPSDM</h2>
+<pre id="log">Klik tombol...\n</pre>
+
+<h3>📋 Baca Data</h3>
+<button onclick="bacaAkun()">👤 Akun</button>
+<button onclick="bacaDokumen()">📄 Dokumen PKS & Nota</button>
+<button onclick="bacaSemua()">🔍 Semua Data Raw</button>
+
+<h3>🗑 Hapus Data</h3>
+<button class="red" onclick="hapusDokumen()">Hapus docPKS & docNota di Firebase</button>
+<button class="red" onclick="hapusSemua()">Hapus SEMUA data Firebase</button>
+
+<h3>👤 Buat Akun Admin</h3>
+<input id="nm" value="Administrator" style="padding:7px;border:1px solid #d1d5db;border-radius:5px;margin:3px;width:160px">
+<input id="em" value="admin@kemendagri.go.id" style="padding:7px;border:1px solid #d1d5db;border-radius:5px;margin:3px;width:200px">
+<input id="pw" value="Admin@2026" style="padding:7px;border:1px solid #d1d5db;border-radius:5px;margin:3px;width:120px">
+<br><button class="green" onclick="buatAdmin()">✅ Buat / Reset Admin</button>
+
+<script>
+const DB  = "https://arsip-bpsdm-default-rtdb.asia-southeast1.firebasedatabase.app";
+const el  = document.getElementById('log');
+const log = t => { el.textContent += t + '\n'; el.scrollTop = el.scrollHeight; };
+const clr = () => { el.textContent = ''; };
+
+async function get(path) {
+  const r = await fetch(`${DB}/${path}.json`);
+  return await r.json();
+}
+async function put(path, val) {
+  const r = await fetch(`${DB}/${path}.json`, {
+    method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(val)
+  });
+  return r.ok;
+}
+async function del(path) {
+  const r = await fetch(`${DB}/${path}.json`, { method:'DELETE' });
+  return r.ok;
+}
+
+async function bacaAkun() {
+  clr(); log("--- AKUN DI FIREBASE ---");
+  const d = await get('accounts');
+  if (!d) { log("⚠️ Kosong / null"); return; }
+  if (Array.isArray(d)) {
+    d.forEach((a,i) => a && log(`[${i}] ${a.name} | ${a.email} | pass: ${a.password} | ${a.role} | ${a.status}`));
+  } else log(JSON.stringify(d, null, 2));
+}
+
+async function bacaDokumen() {
+  clr(); log("--- DOKUMEN DI FIREBASE ---");
+  const pks  = await get('docPKS');
+  const nota = await get('docNota');
+  log("docPKS  raw: " + JSON.stringify(pks));
+  log("docNota raw: " + JSON.stringify(nota));
+  
+  // Cek apakah wrapped { data: [...] } atau array langsung
+  const pksArr  = pks  && pks.data  ? pks.data  : (Array.isArray(pks)  ? pks  : null);
+  const notaArr = nota && nota.data ? nota.data : (Array.isArray(nota) ? nota : null);
+  log(`\nPKS  (${pksArr?.length ?? 0} dok): ` + (pksArr?.map(d=>d.judul).join(', ')||'kosong'));
+  log(`Nota (${notaArr?.length ?? 0} dok): ` + (notaArr?.map(d=>d.judul).join(', ')||'kosong'));
+}
+
+async function bacaSemua() {
+  clr(); log("--- SEMUA DATA RAW ---");
+  const d = await get('');
+  log(JSON.stringify(d, null, 2));
+}
+
+async function hapusDokumen() {
+  if (!confirm("Hapus docPKS & docNota di Firebase?")) return;
+  clr();
+  const ok1 = await del('docPKS');
+  const ok2 = await del('docNota');
+  log("docPKS  deleted: " + ok1);
+  log("docNota deleted: " + ok2);
+  log("✅ Selesai");
+}
+
+async function hapusSemua() {
+  if (!confirm("HAPUS SEMUA data Firebase? Ini tidak bisa dibatalkan!")) return;
+  clr();
+  const ok = await del('');
+  log(ok ? "✅ Semua data dihapus" : "❌ Gagal");
+}
+
+async function buatAdmin() {
+  clr();
+  const nama  = document.getElementById('nm').value.trim();
+  const email = document.getElementById('em').value.trim().toLowerCase();
+  const pass  = document.getElementById('pw').value;
+  
+  // Ambil akun existing
+  const existing = await get('accounts');
+  let current = Array.isArray(existing) ? existing.filter(Boolean) : [];
+  
+  // Update atau tambah
+  const idx = current.findIndex(a => a.email === email);
+  const acct = { id: idx >= 0 ? current[idx].id : Date.now(), name: nama, email, password: pass, role: 'Administrator', status: 'active', createdAt: new Date().toISOString() };
+  
+  if (idx >= 0) current[idx] = acct;
+  else current.push(acct);
+  
+  const ok = await put('accounts', current);
+  log(ok ? `✅ Akun berhasil!\n📧 ${email}\n🔑 ${pass}` : "❌ Gagal — cek Firebase Rules");
+}
+</script>
+</body>
+</html>
