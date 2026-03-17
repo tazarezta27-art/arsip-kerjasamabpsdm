@@ -2435,10 +2435,10 @@ function savePersistentData() {
   // Simpan ke localStorage dulu (langsung)
   localStorage.setItem('bpsdm_docPKS',  JSON.stringify(dataPKS));
   localStorage.setItem('bpsdm_docNota', JSON.stringify(dataNota));
-  // Sync ke Firebase di background
+  // Wrap dalam objek agar array kosong tidak jadi null di Firebase
   if (firebaseReady) {
-    fbSet('docPKS', dataPKS);
-    fbSet('docNota', dataNota); // fire-and-forget
+    fbSet('docPKS',  { data: dataPKS });
+    fbSet('docNota', { data: dataNota });
   }
 }
 
@@ -2451,9 +2451,10 @@ async function loadPersistentData() {
         fbGet('docNota'),
         fbGet('doclinks'),
       ]);
-      if (Array.isArray(fbPKS) && fbPKS.length)  { dataPKS  = fbPKS;   localStorage.setItem('bpsdm_docPKS',   JSON.stringify(dataPKS)); }
-      if (Array.isArray(fbNota) && fbNota.length) { dataNota = fbNota;  localStorage.setItem('bpsdm_docNota',  JSON.stringify(dataNota)); }
-      if (fbLinks && typeof fbLinks === 'object') { docLinks = fbLinks; localStorage.setItem('bpsdm_doclinks', JSON.stringify(docLinks)); }
+      // Unwrap dari objek { data: [...] } — array kosong pun valid
+      if (fbPKS  && Array.isArray(fbPKS.data))  { dataPKS  = fbPKS.data;  localStorage.setItem('bpsdm_docPKS',  JSON.stringify(dataPKS)); }
+      if (fbNota && Array.isArray(fbNota.data)) { dataNota = fbNota.data; localStorage.setItem('bpsdm_docNota', JSON.stringify(dataNota)); }
+      if (fbLinks && typeof fbLinks === 'object' && !fbLinks.data) { docLinks = fbLinks; localStorage.setItem('bpsdm_doclinks', JSON.stringify(docLinks)); }
       return; // sukses dari Firebase, selesai
     } catch(e) { /* gagal, fallback localStorage */ }
   }
@@ -2467,9 +2468,7 @@ async function loadPersistentData() {
 
 function saveDocLinks() {
   localStorage.setItem('bpsdm_doclinks', JSON.stringify(docLinks));
-  if (firebaseReady) {
-    fbSet('doclinks', docLinks); // fire-and-forget
-  }
+  if (firebaseReady) fbSet('doclinks', docLinks); // {} is fine, Firebase keeps objects
 }
 
 // Convert any Google Drive share URL to direct preview URL
