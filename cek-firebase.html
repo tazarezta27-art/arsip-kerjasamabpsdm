@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Cek & Reset Akun Firebase</title>
+<style>
+  body { font-family: sans-serif; padding: 30px; max-width: 600px; }
+  pre  { background: #f3f4f6; padding: 14px; border-radius: 8px; font-size: 13px; white-space: pre-wrap; word-break: break-all; }
+  button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; margin: 6px 4px; }
+  button.red { background: #ef4444; }
+  button.green { background: #10b981; }
+  input { padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; margin: 4px; width: 220px; }
+</style>
+</head>
+<body>
+<h2>🔧 Cek & Reset Akun Firebase</h2>
+<pre id="log">Klik tombol di bawah...\n</pre>
+
+<button onclick="lihatAkun()">👁 Lihat Akun di Firebase</button>
+<button class="red" onclick="hapusAkun()">🗑 Hapus Semua Akun</button>
+<br><br>
+<strong>Buat akun admin baru:</strong><br>
+<input id="nama" placeholder="Nama" value="Administrator">
+<input id="email" placeholder="Email" value="admin@kemendagri.go.id">
+<input id="pass" placeholder="Password" value="Admin@2026">
+<br>
+<button class="green" onclick="buatAdmin()">✅ Buat Akun Admin</button>
+
+<script>
+const DB  = "https://arsip-bpsdm-default-rtdb.asia-southeast1.firebasedatabase.app";
+const log = t => { document.getElementById('log').textContent += t + '\n'; };
+const clr = ()  => { document.getElementById('log').textContent = ''; };
+
+async function lihatAkun() {
+  clr(); log("--- Akun di Firebase ---");
+  const res  = await fetch(`${DB}/accounts.json`);
+  const data = await res.json();
+  log("Status HTTP: " + res.status);
+  if (!data) { log("⚠️ Tidak ada akun sama sekali"); return; }
+  if (Array.isArray(data)) {
+    log(`✅ ${data.length} akun ditemukan:`);
+    data.forEach((a,i) => {
+      if (!a) return;
+      log(`[${i}] nama: ${a.name} | email: ${a.email} | pass: ${a.password} | role: ${a.role} | status: ${a.status}`);
+    });
+  } else {
+    log("Raw data: " + JSON.stringify(data, null, 2));
+  }
+}
+
+async function hapusAkun() {
+  if (!confirm("Hapus semua akun di Firebase?")) return;
+  clr(); log("Menghapus...");
+  const res = await fetch(`${DB}/accounts.json`, { method: 'DELETE' });
+  log("Status: " + res.status);
+  log(res.ok ? "✅ Akun dihapus" : "❌ Gagal");
+}
+
+async function buatAdmin() {
+  clr();
+  const nama  = document.getElementById('nama').value.trim();
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  const pass  = document.getElementById('pass').value;
+  if (!nama || !email || !pass) { log("❌ Semua field wajib diisi"); return; }
+  
+  // Ambil akun yang ada dulu
+  const res1   = await fetch(`${DB}/accounts.json`);
+  const existing = await res1.json();
+  const current  = Array.isArray(existing) ? existing.filter(Boolean) : [];
+  
+  // Cek email sudah ada
+  if (current.find(a => a.email === email)) {
+    log(`⚠️ Email ${email} sudah terdaftar. Hapus dulu atau ganti email.`);
+    return;
+  }
+  
+  const newAcct = {
+    id:        Date.now(),
+    name:      nama,
+    email:     email,
+    password:  pass,
+    role:      'Administrator',
+    status:    'active',
+    createdAt: new Date().toISOString()
+  };
+  
+  current.push(newAcct);
+  
+  const res2 = await fetch(`${DB}/accounts.json`, {
+    method:  'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(current)
+  });
+  
+  log("Status: " + res2.status);
+  if (res2.ok) {
+    log(`✅ Akun berhasil dibuat!`);
+    log(`📧 Email    : ${email}`);
+    log(`🔑 Password : ${pass}`);
+    log(`👑 Role     : Administrator`);
+    log(`\nSekarang bisa login di aplikasi dengan kredensial di atas.`);
+  } else {
+    log("❌ Gagal buat akun. Cek Firebase Rules.");
+  }
+}
+</script>
+</body>
+</html>
