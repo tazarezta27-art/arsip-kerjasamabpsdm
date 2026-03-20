@@ -2876,6 +2876,15 @@ function showToast(msg, type='') {
   setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(60px)'; t.style.transition='all 0.35s ease'; setTimeout(()=>t.remove(),350); }, 3500);
 }
 
+// Bersihkan cache localStorage lama saat app pertama dibuka
+// agar data dari Firebase selalu jadi sumber kebenaran
+(function clearStaleCache() {
+  // Hapus cache dokumen lama — akan di-reload segar dari Firebase saat login
+  localStorage.removeItem('bpsdm_docPKS');
+  localStorage.removeItem('bpsdm_docNota');
+  localStorage.removeItem('bpsdm_doclinks');
+})();
+
 // Initialize Firebase when page loads
 initFirebase().then(() => updateSyncBadge(syncStatus));
 
