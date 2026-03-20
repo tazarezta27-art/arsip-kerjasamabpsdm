@@ -2413,8 +2413,9 @@ function savePersistentData() {
   localStorage.setItem('bpsdm_docNota', JSON.stringify(dataNota));
   // Simpan ke Firebase — pakai { data: [...] } agar array kosong tidak jadi null
   if (firebaseReady) {
-    fbSet('docPKS',  { data: dataPKS,  ts: Date.now() });
-    fbSet('docNota', { data: dataNota, ts: Date.now() });
+    // Selalu simpan, termasuk array kosong — 'data' key memastikan tidak jadi null di Firebase
+    fbSet('docPKS',  { data: dataPKS  || [], ts: Date.now() });
+    fbSet('docNota', { data: dataNota || [], ts: Date.now() });
   }
 }
 
@@ -2427,17 +2428,19 @@ async function loadPersistentData() {
       fbGet('doclinks'),
     ]);
 
-    // Handle 2 format: { data: [...] } (format baru) atau [...] (format lama)
+    // Handle 2 format: { data: [...] } atau array langsung
+    // PENTING: gunakan 'data' in v bukan v.data — karena [] adalah falsy!
     const parseDocs = v => {
-      if (!v) return null;                          // null = tidak ada data
-      if (Array.isArray(v)) return v;               // format lama: array langsung
-      if (v.data && Array.isArray(v.data)) return v.data; // format baru: { data: [] }
+      if (v === null || v === undefined) return null; // tidak ada data sama sekali
+      if (Array.isArray(v)) return v;                 // format lama
+      if (typeof v === 'object' && 'data' in v && Array.isArray(v.data)) return v.data; // format baru, termasuk []
       return null;
     };
 
     const pksData  = parseDocs(fbPKS);
     const notaData = parseDocs(fbNota);
 
+    // Gunakan data Firebase selalu jika tidak null (termasuk array kosong [])
     if (pksData  !== null) { dataPKS  = pksData;  localStorage.setItem('bpsdm_docPKS',  JSON.stringify(dataPKS)); }
     if (notaData !== null) { dataNota = notaData; localStorage.setItem('bpsdm_docNota', JSON.stringify(dataNota)); }
     if (fbLinks && typeof fbLinks === 'object') {
@@ -2445,6 +2448,9 @@ async function loadPersistentData() {
       docLinks = fbLinks.data ? fbLinks.data : fbLinks;
       localStorage.setItem('bpsdm_doclinks', JSON.stringify(docLinks));
     }
+    // Bersihkan localStorage lama supaya cache basi tidak mengganggu sesi berikutnya
+    localStorage.removeItem('bpsdm_docPKS');
+    localStorage.removeItem('bpsdm_docNota');
     return; // selesai dari Firebase
   } catch(e) { /* jaringan error, fallback ke localStorage */ }
 
