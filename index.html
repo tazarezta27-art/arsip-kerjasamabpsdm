@@ -1846,32 +1846,8 @@ let currentDocType = 'pks';
 let sidebarCollapsed = false;
 let editingId = null;
 
-let dataPKS = [
-  { id:1, pihak:'Universitas Indonesia', judul:'PKS Penyelenggaraan Diklat Kepemimpinan', nomor:'PKS/BPSDM/001/2026', mulai:'01/01/2026', akhir:'31/12/2026', status:'Aktif' },
-  { id:2, pihak:'Universitas Gadjah Mada', judul:'PKS Pengembangan Kompetensi ASN', nomor:'PKS/BPSDM/002/2026', mulai:'15/01/2026', akhir:'14/01/2027', status:'Aktif' },
-  { id:3, pihak:'Institut Teknologi Bandung', judul:'PKS Diklat Teknis Digitalisasi', nomor:'PKS/BPSDM/003/2025', mulai:'01/03/2025', akhir:'19/03/2026', status:'Aktif' },
-  { id:4, pihak:'Universitas Airlangga', judul:'PKS Riset & Pengembangan SDM', nomor:'PKS/BPSDM/004/2025', mulai:'01/06/2025', akhir:'31/05/2026', status:'Aktif' },
-  { id:5, pihak:'Politeknik Negeri Jakarta', judul:'PKS Magang Mahasiswa', nomor:'PKS/BPSDM/005/2024', mulai:'01/07/2024', akhir:'30/06/2025', status:'Berakhir' },
-  { id:6, pihak:'IPDN Jatinangor', judul:'PKS Penerimaan Peserta Diklat', nomor:'PKS/BPSDM/006/2026', mulai:'01/02/2026', akhir:'31/01/2027', status:'Aktif' },
-  { id:7, pihak:'LAN RI', judul:'PKS Penyelenggaraan Latsar CPNS', nomor:'PKS/BPSDM/007/2026', mulai:'01/03/2026', akhir:'28/02/2027', status:'Aktif' },
-  { id:8, pihak:'BKN', judul:'PKS Integrasi Data ASN', nomor:'PKS/BPSDM/008/2025', mulai:'01/04/2025', akhir:'31/03/2026', status:'Aktif' },
-  { id:9, pihak:'Kemenpan-RB', judul:'PKS Reformasi Birokrasi', nomor:'PKS/BPSDM/009/2026', mulai:'01/01/2026', akhir:'31/12/2026', status:'Aktif' },
-  { id:10, pihak:'BRIN', judul:'PKS Penelitian Inovasi Diklat', nomor:'PKS/BPSDM/010/2025', mulai:'01/05/2025', akhir:'30/04/2026', status:'Aktif' },
-  { id:11, pihak:'Universitas Hasanuddin', judul:'PKS Pengembangan Wilayah Timur', nomor:'PKS/BPSDM/011/2024', mulai:'01/08/2024', akhir:'31/07/2025', status:'Berakhir' },
-  { id:12, pihak:'Universitas Diponegoro', judul:'PKS Studi Kebijakan Publik', nomor:'PKS/BPSDM/012/2026', mulai:'01/04/2026', akhir:'31/03/2027', status:'Aktif' },
-];
-
-let dataNota = [
-  { id:101, pihak:'Kementerian Keuangan', judul:'Nota Kesepahaman Pengelolaan Keuangan Daerah', nomor:'MoU/BPSDM/001/2026', mulai:'01/01/2026', akhir:'31/12/2027', status:'Aktif' },
-  { id:102, pihak:'Kementerian Kesehatan', judul:'MoU Pengembangan SDM Kesehatan Daerah', nomor:'MoU/BPSDM/002/2026', mulai:'15/02/2026', akhir:'14/02/2028', status:'Aktif' },
-  { id:103, pihak:'Kementerian Pendidikan', judul:'MoU Pendidikan & Pelatihan Pejabat', nomor:'MoU/BPSDM/003/2025', mulai:'01/06/2025', akhir:'25/03/2026', status:'Aktif' },
-  { id:104, pihak:'Pemerintah Provinsi DKI', judul:'MoU Diklat Pegawai Pemprov DKI', nomor:'MoU/BPSDM/004/2024', mulai:'01/01/2024', akhir:'31/12/2025', status:'Berakhir' },
-  { id:105, pihak:'AIPNI', judul:'MoU Profesi dan Kompetensi Aparatur', nomor:'MoU/BPSDM/005/2026', mulai:'01/03/2026', akhir:'28/02/2028', status:'Aktif' },
-  { id:106, pihak:'Pemerintah Kota Surabaya', judul:'MoU Penguatan Kapasitas Pemda', nomor:'MoU/BPSDM/006/2026', mulai:'01/04/2026', akhir:'31/03/2028', status:'Aktif' },
-  { id:107, pihak:'Universitas Brawijaya', judul:'MoU Kerja Sama Akademik Tridharma', nomor:'MoU/BPSDM/007/2025', mulai:'01/09/2025', akhir:'31/08/2026', status:'Aktif' },
-  { id:108, pihak:'Pemerintah Kab. Bogor', judul:'MoU Peningkatan Kompetensi Kepala Desa', nomor:'MoU/BPSDM/008/2025', mulai:'01/11/2025', akhir:'31/10/2026', status:'Aktif' },
-];
-
+let dataPKS = [];
+let dataNota = [];
 // =========================================================
 // AUTH
 // =========================================================
