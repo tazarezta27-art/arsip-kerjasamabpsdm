@@ -2039,9 +2039,8 @@ function autoUpdateStatus() {
       changed = true;
     }
   });
-  if (changed) {
-    savePersistentData();
-  }
+  // Simpan ke Firebase agar status terbaru tersimpan permanen
+  if (changed) savePersistentData();
   return changed;
 }
 
@@ -2151,8 +2150,24 @@ function updateStats() {
 // =========================================================
 // RENDER TABLE
 // =========================================================
+function refreshTahunOptions(type) {
+  const data   = type === 'pks' ? dataPKS : dataNota;
+  const sel    = document.getElementById(type + '-filter-tahun');
+  if (!sel) return;
+  const cur    = sel.value;
+  const tahuns = new Set();
+  data.forEach(d => {
+    if (d.mulai) { const y = d.mulai.split('/')[2]; if (y) tahuns.add(y); }
+    if (d.akhir) { const y = d.akhir.split('/')[2]; if (y) tahuns.add(y); }
+  });
+  const sorted = [...tahuns].sort().reverse();
+  sel.innerHTML = '<option value="">Semua Tahun</option>' +
+    sorted.map(y => `<option value="${y}" ${y===cur?'selected':''}>${y}</option>`).join('');
+}
+
 function renderTable(type) {
   autoUpdateStatus(); // cek & update status berdasarkan tanggal sebelum render
+  refreshTahunOptions(type); // update opsi tahun sesuai data aktual
   const data    = type === 'pks' ? dataPKS : dataNota;
   const tbody   = document.getElementById(type + '-tbody');
   const fStatus = document.getElementById(type + '-filter-status')?.value || '';
@@ -2160,7 +2175,8 @@ function renderTable(type) {
 
   let filtered = data.filter(d => {
     const matchStatus = !fStatus || d.status === fStatus;
-    const matchTahun  = !fTahun  || d.nomor.includes(fTahun);
+    // Filter tahun: cek di kolom mulai, akhir, dan nomor
+    const matchTahun  = !fTahun  || (d.mulai && d.mulai.includes(fTahun)) || (d.akhir && d.akhir.includes(fTahun)) || (d.nomor && d.nomor.includes(fTahun));
     return matchStatus && matchTahun;
   });
 
