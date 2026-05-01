@@ -1188,6 +1188,7 @@ tbody td { padding:13px 14px; font-size:0.84rem; color:var(--gray-700); vertical
                 <th>Nama Pihak</th>
                 <th>Judul Perjanjian</th>
                 <th>Nomor Perjanjian</th>
+                <th>Unit Kerja</th>
                 <th>Masa Berlaku</th>
                 <th>Status</th>
                 <th>Aksi</th>
@@ -1234,6 +1235,7 @@ tbody td { padding:13px 14px; font-size:0.84rem; color:var(--gray-700); vertical
                 <th>Nama Pihak</th>
                 <th>Judul Perjanjian</th>
                 <th>Nomor Perjanjian</th>
+                <th>Unit Kerja</th>
                 <th>Masa Berlaku</th>
                 <th>Status</th>
                 <th>Aksi</th>
@@ -1363,6 +1365,12 @@ tbody td { padding:13px 14px; font-size:0.84rem; color:var(--gray-700); vertical
       <div style="display:flex;gap:10px">
         <input class="form-input" style="padding-left:14px;flex:1" type="text" id="f-mulai" placeholder="Mulai (tgl/bln/thn)">
         <input class="form-input" style="padding-left:14px;flex:1" type="text" id="f-akhir" placeholder="Akhir (tgl/bln/thn)">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Unit Kerja</label>
+      <div class="form-input-wrap">
+        <input class="form-input" style="padding-left:14px" type="text" id="f-unitkerja" placeholder="Contoh: Bidang Diklat Kepemimpinan">
       </div>
     </div>
     <div class="form-group">
@@ -1512,6 +1520,68 @@ tbody td { padding:13px 14px; font-size:0.84rem; color:var(--gray-700); vertical
     <div class="modal-actions">
       <button class="btn-cancel" id="confirm-cancel-btn">Batal</button>
       <button id="confirm-ok-btn" class="btn-save">Ya, Lanjutkan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EDIT DOKUMEN MODAL ===== -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="edit-modal-title">✏️ Edit Dokumen</h3>
+      <button class="modal-close" onclick="closeEditModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nama Pihak *</label>
+      <div class="form-input-wrap">
+        <input class="form-input" style="padding-left:14px" type="text" id="e-pihak" placeholder="Nama instansi / lembaga mitra">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Judul Perjanjian *</label>
+      <div class="form-input-wrap">
+        <input class="form-input" style="padding-left:14px" type="text" id="e-judul" placeholder="Judul lengkap dokumen">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nomor Perjanjian *</label>
+      <div class="form-input-wrap">
+        <input class="form-input" style="padding-left:14px" type="text" id="e-nomor" placeholder="Contoh: PKS/BPSDM/001/2026">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Masa Berlaku</label>
+      <div style="display:flex;gap:10px">
+        <input class="form-input" style="padding-left:14px;flex:1" type="text" id="e-mulai" placeholder="Mulai (tgl/bln/thn)">
+        <input class="form-input" style="padding-left:14px;flex:1" type="text" id="e-akhir" placeholder="Akhir (tgl/bln/thn)">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Unit Kerja</label>
+      <div class="form-input-wrap">
+        <input class="form-input" style="padding-left:14px" type="text" id="e-unitkerja" placeholder="Contoh: Bidang Diklat Kepemimpinan">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <select class="form-input" style="padding-left:14px" id="e-status">
+        <option value="Aktif">Aktif</option>
+        <option value="Segera Berakhir">Segera Berakhir</option>
+        <option value="Berakhir">Berakhir</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Link Google Drive</label>
+      <input class="form-input" style="padding-left:14px" type="url" id="e-gdrive" placeholder="https://drive.google.com/file/d/...">
+      <div style="margin-top:7px;font-size:0.75rem;color:var(--gray-400);line-height:1.5">
+        💡 Kosongkan jika tidak ingin mengubah link yang ada.
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEditModal()">Batal</button>
+      <button class="btn-save" onclick="saveEdit()">Simpan Perubahan</button>
     </div>
   </div>
 </div>
@@ -2189,40 +2259,31 @@ function renderTable(type) {
 
   tbody.innerHTML = filtered.map((d, i) => {
     const hasFile = !!docLinks[d.id];
+    const editBtn = canDo('manage_accounts') ?
+      '<button style="background:var(--blue-50);color:var(--blue-600);border:none;border-radius:6px;padding:5px 10px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-family:Plus Jakarta Sans,sans-serif" onclick="openEditModal(' + d.id + ',\'' + type + '\')">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button>' : '';
+    const delBtn = canDo('delete_doc') ?
+      '<button class="btn-action btn-delete" onclick="deleteDoc(' + d.id + ',\'' + type + '\')">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>Hapus</button>' : '';
     return `<tr>
       <td>${i+1}</td>
       <td class="td-bold">${d.pihak}</td>
-      <td>
-        ${d.judul}
-        ${hasFile ? `<span title="${d.fileName}" style="margin-left:6px;font-size:0.67rem;font-weight:700;padding:2px 7px;border-radius:20px;background:var(--green-100);color:var(--green-600);vertical-align:middle">📎 ${d.fileName.length>18?d.fileName.substring(0,18)+'…':d.fileName}</span>` : '<span style="margin-left:6px;font-size:0.67rem;font-weight:600;padding:2px 7px;border-radius:20px;background:var(--gray-100);color:var(--gray-400);vertical-align:middle">Belum ada file</span>'}
-      </td>
+      <td>${d.judul} ${hasFile ? '<span style="margin-left:5px;font-size:0.67rem;font-weight:700;padding:2px 7px;border-radius:20px;background:var(--green-100);color:var(--green-600)">📎 File</span>' : '<span style="margin-left:5px;font-size:0.67rem;font-weight:600;padding:2px 7px;border-radius:20px;background:var(--gray-100);color:var(--gray-400)">Belum ada file</span>'}</td>
       <td style="font-family:monospace;font-size:0.78rem;color:var(--gray-500)">${d.nomor}</td>
-      <td>${d.mulai} – ${d.akhir}</td>
+      <td style="font-size:0.82rem;color:var(--gray-600)">${d.unitkerja || '<span style=color:var(--gray-300)>—</span>'}</td>
+      <td style="white-space:nowrap;font-size:0.82rem">${d.mulai || '—'} – ${d.akhir || '—'}</td>
       <td>${badgeHtml(d.status, d.akhir)}</td>
       <td>
         <div class="action-btns">
-          <button class="btn-action btn-view" onclick="viewDoc(${d.id},'${type}')" title="${hasFile?'Lihat dokumen':'Dokumen belum diupload'}">
+          <button class="btn-action btn-view" onclick="viewDoc(${d.id},'${type}')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Lihat
           </button>
-          <button class="btn-action btn-download" onclick="downloadDoc(${d.id})" ${!hasFile?'style="opacity:0.5;cursor:not-allowed" disabled':''} title="${hasFile?'Unduh file':'Belum ada file'}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Unduh
-          </button>
-          ${canDo('upload_doc') ? '<button class="btn-action btn-upload" onclick="uploadDoc(' + d.id + ',\''+ type +'\')">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>' +
-            (hasFile ? 'Ganti' : 'Upload') + '</button>' : ''}
-          ${canDo('delete_doc') ? '<button class="btn-action btn-delete" onclick="deleteDoc(' + d.id + ',\''+ type +'\')">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>Hapus</button>' : ''}
+          ${editBtn}
+          ${delBtn}
         </div>
       </td>
     </tr>`;
   }).join('');
-}
-
-function badgeHtml(status, akhirStr) {
-  const cls = status === 'Aktif' ? 'aktif' : status === 'Berakhir' ? 'berakhir' : 'segera';
-  let extra = '';
-  if (akhirStr) {
-    const days = daysRemaining(akhirStr);
     if (days !== null) {
       if (status === 'Segera Berakhir' && days >= 0) {
         extra = `<span style="margin-left:5px;font-size:0.68rem;font-weight:700;background:rgba(217,119,6,0.15);color:#b45309;padding:1px 6px;border-radius:10px;white-space:nowrap">⏳ ${days} hari lagi</span>`;
@@ -2407,7 +2468,7 @@ function openAddModal(type) {
   currentDocType = type;
   editingId = null;
   document.getElementById('modal-title-text').textContent = type === 'pks' ? '➕ Tambah PKS' : '➕ Tambah Nota Kesepahaman';
-  ['f-pihak','f-judul','f-nomor','f-mulai','f-akhir'].forEach(id => document.getElementById(id).value = '');
+  ['f-pihak','f-judul','f-nomor','f-mulai','f-akhir','f-unitkerja'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-status').value = 'Aktif';
   document.getElementById('add-modal').classList.add('open');
 }
@@ -2506,19 +2567,20 @@ function parseGDriveUrl(rawUrl) {
 
 async function saveDoc() {
   if (!canDo('add_doc')) { showToast('Anda tidak memiliki izin untuk menambah dokumen.', 'error'); return; }
-  const pihak  = document.getElementById('f-pihak').value.trim();
-  const judul  = document.getElementById('f-judul').value.trim();
-  const nomor  = document.getElementById('f-nomor').value.trim();
-  const mulai  = document.getElementById('f-mulai').value.trim();
-  const akhir  = document.getElementById('f-akhir').value.trim();
-  const status = document.getElementById('f-status').value;
-  const rawUrl = document.getElementById('f-gdrive').value.trim();
+  const pihak     = document.getElementById('f-pihak').value.trim();
+  const judul     = document.getElementById('f-judul').value.trim();
+  const nomor     = document.getElementById('f-nomor').value.trim();
+  const mulai     = document.getElementById('f-mulai').value.trim();
+  const akhir     = document.getElementById('f-akhir').value.trim();
+  const unitkerja = document.getElementById('f-unitkerja').value.trim();
+  const status    = document.getElementById('f-status').value;
+  const rawUrl    = document.getElementById('f-gdrive').value.trim();
 
   if (!pihak || !judul || !nomor) { showToast('Mohon lengkapi data yang wajib diisi.','error'); return; }
 
   const docId  = Date.now();
   const parsed = rawUrl ? parseGDriveUrl(rawUrl) : null;
-  const newDoc = { id: docId, pihak, judul, nomor, mulai, akhir, status, hasFile: !!rawUrl, fileName: rawUrl ? (judul + ' (GDrive)') : null };
+  const newDoc = { id: docId, pihak, judul, nomor, mulai, akhir, unitkerja, status, hasFile: !!rawUrl, fileName: rawUrl ? (judul + ' (GDrive)') : null };
 
   if (parsed) {
     docLinks[docId] = { ...parsed, rawUrl, name: judul };
@@ -2705,6 +2767,88 @@ document.getElementById('stat-modal').addEventListener('click', function(e) { if
 document.getElementById('add-modal').addEventListener('click', function(e) { if(e.target===this) closeModal(); });
 document.getElementById('view-modal').addEventListener('click', function(e) { if(e.target===this) this.classList.remove('open'); });
 document.getElementById('upload-only-modal').addEventListener('click', function(e) { if(e.target===this) this.classList.remove('open'); });
+
+
+// =========================================================
+// EDIT DOKUMEN
+// =========================================================
+let editingDocId   = null;
+let editingDocType = null;
+
+function openEditModal(id, type) {
+  if (!canDo('manage_accounts')) { showToast('Hanya Administrator yang bisa mengedit dokumen.', 'error'); return; }
+  const data = type === 'pks' ? dataPKS : dataNota;
+  const doc  = data.find(d => d.id === id);
+  if (!doc) return;
+
+  editingDocId   = id;
+  editingDocType = type;
+
+  document.getElementById('edit-modal-title').textContent = '✏️ Edit ' + (type === 'pks' ? 'PKS' : 'Nota Kesepahaman');
+  document.getElementById('e-pihak').value     = doc.pihak    || '';
+  document.getElementById('e-judul').value     = doc.judul    || '';
+  document.getElementById('e-nomor').value     = doc.nomor    || '';
+  document.getElementById('e-mulai').value     = doc.mulai    || '';
+  document.getElementById('e-akhir').value     = doc.akhir    || '';
+  document.getElementById('e-unitkerja').value = doc.unitkerja|| '';
+  document.getElementById('e-status').value    = doc.status   || 'Aktif';
+  document.getElementById('e-gdrive').value    = '';
+
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('open');
+  editingDocId   = null;
+  editingDocType = null;
+}
+
+function saveEdit() {
+  const pihak     = document.getElementById('e-pihak').value.trim();
+  const judul     = document.getElementById('e-judul').value.trim();
+  const nomor     = document.getElementById('e-nomor').value.trim();
+  const mulai     = document.getElementById('e-mulai').value.trim();
+  const akhir     = document.getElementById('e-akhir').value.trim();
+  const unitkerja = document.getElementById('e-unitkerja').value.trim();
+  const status    = document.getElementById('e-status').value;
+  const rawUrl    = document.getElementById('e-gdrive').value.trim();
+
+  if (!pihak || !judul || !nomor) { showToast('Nama Pihak, Judul, dan Nomor wajib diisi.', 'error'); return; }
+
+  const data = editingDocType === 'pks' ? dataPKS : dataNota;
+  const doc  = data.find(d => d.id === editingDocId);
+  if (!doc) return;
+
+  // Update fields
+  doc.pihak     = pihak;
+  doc.judul     = judul;
+  doc.nomor     = nomor;
+  doc.mulai     = mulai;
+  doc.akhir     = akhir;
+  doc.unitkerja = unitkerja;
+  doc.status    = status;
+
+  // Update GDrive link jika diisi
+  if (rawUrl) {
+    const parsed = parseGDriveUrl(rawUrl);
+    docLinks[editingDocId] = { ...parsed, rawUrl, name: judul };
+    doc.hasFile  = true;
+    doc.fileName = judul + ' (GDrive)';
+    saveDocLinks();
+  }
+
+  savePersistentData();
+  renderTable(editingDocType);
+  updateStats();
+  renderRecent();
+  closeEditModal();
+  showToast('Dokumen berhasil diperbarui! ✅', 'success');
+}
+
+// Close on overlay click
+document.getElementById('edit-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeEditModal();
+});
 
 // =========================================================
 // BACKUP & RESTORE
