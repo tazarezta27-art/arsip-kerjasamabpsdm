@@ -1173,6 +1173,14 @@ tbody td { padding:13px 14px; font-size:0.84rem; color:var(--gray-700); vertical
             <option value="2025">2025</option>
             <option value="2024">2024</option>
           </select>
+          <select class="filter-select" id="pks-filter-unitkerja" onchange="renderTable('pks')">
+            <option value="">Semua Unit Kerja</option>
+            <option value="Sekretariat">Sekretariat</option>
+            <option value="Pusat Standarisasi dan Sertifikasi">Pusat Standarisasi dan Sertifikasi</option>
+            <option value="Pusat Pengembangan Kompetensi Pemerintahan Dalam Negeri">Pusat Pengembangan Kompetensi Pemerintahan Dalam Negeri</option>
+            <option value="Pusat Pengembangan Kompetensi Manajemen Kepemimpinan">Pusat Pengembangan Kompetensi Manajemen Kepemimpinan</option>
+            <option value="Pusat Pengembangan Kompetensi Jabatan Fungsional">Pusat Pengembangan Kompetensi Jabatan Fungsional</option>
+          </select>
         </div>
         <button class="btn-add" onclick="openAddModal('pks')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -2239,14 +2247,15 @@ function renderTable(type) {
   refreshTahunOptions(type); // update opsi tahun sesuai data aktual
   const data    = type === 'pks' ? dataPKS : dataNota;
   const tbody   = document.getElementById(type + '-tbody');
-  const fStatus = document.getElementById(type + '-filter-status')?.value || '';
-  const fTahun  = document.getElementById(type + '-filter-tahun')?.value || '';
+  const fStatus    = document.getElementById(type + '-filter-status')?.value    || '';
+  const fTahun     = document.getElementById(type + '-filter-tahun')?.value     || '';
+  const fUnitKerja = type === 'pks' ? (document.getElementById('pks-filter-unitkerja')?.value || '') : '';
 
   let filtered = data.filter(d => {
-    const matchStatus = !fStatus || d.status === fStatus;
-    // Filter tahun: cek di kolom mulai, akhir, dan nomor
-    const matchTahun  = !fTahun  || (d.mulai && d.mulai.includes(fTahun)) || (d.akhir && d.akhir.includes(fTahun)) || (d.nomor && d.nomor.includes(fTahun));
-    return matchStatus && matchTahun;
+    const matchStatus    = !fStatus    || d.status === fStatus;
+    const matchTahun     = !fTahun     || (d.mulai && d.mulai.includes(fTahun)) || (d.akhir && d.akhir.includes(fTahun)) || (d.nomor && d.nomor.includes(fTahun));
+    const matchUnitKerja = !fUnitKerja || (d.unitkerja && d.unitkerja === fUnitKerja);
+    return matchStatus && matchTahun && matchUnitKerja;
   });
 
   if (!filtered.length) {
