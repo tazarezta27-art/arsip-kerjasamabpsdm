@@ -2284,6 +2284,13 @@ function renderTable(type) {
       </td>
     </tr>`;
   }).join('');
+}
+
+function badgeHtml(status, akhirStr) {
+  const cls = status === 'Aktif' ? 'aktif' : status === 'Berakhir' ? 'berakhir' : 'segera';
+  let extra = '';
+  if (akhirStr) {
+    const days = daysRemaining(akhirStr);
     if (days !== null) {
       if (status === 'Segera Berakhir' && days >= 0) {
         extra = `<span style="margin-left:5px;font-size:0.68rem;font-weight:700;background:rgba(217,119,6,0.15);color:#b45309;padding:1px 6px;border-radius:10px;white-space:nowrap">⏳ ${days} hari lagi</span>`;
